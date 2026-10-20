@@ -90,6 +90,14 @@ $trac/atm2grid - data/atm_2000_01_01_00_00_00.tab \
 echo -e "\nCompare results..."
 error=0
 for f in $(ls data.ref/*.tab) ; do
-    diff -q -s data/"$(basename "$f")" "$f" || error=1
+    # The sign of a NaN (e.g., skewness of constant quantities) is
+    # platform-dependent, so "-nan" and "nan" are treated as equal.
+    if diff -q <(sed 's/-nan/nan/g' data/"$(basename "$f")") \
+	      <(sed 's/-nan/nan/g' "$f") > /dev/null ; then
+	echo "Files data/$(basename "$f") and $f are identical"
+    else
+	echo "Files data/$(basename "$f") and $f differ"
+	error=1
+    fi
 done
 exit $error
