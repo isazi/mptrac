@@ -23,3 +23,31 @@ jobs:
       run: cd src ; make wrapper ZSTD=1 LZ4=1 ZFP=1 ECCODES=1
     - name: make wrapper_test
       run: cd src ; make wrapper_test ZSTD=1 LZ4=1 ZFP=1 ECCODES=1
+
+  build-nvc:
+    runs-on: ubuntu-24.04
+    env:
+      NVC_FLAGS: COMPILER=nvc NOFMA=1 ZSTD=1 LZ4=1 ZFP=1 ECCODES=1
+    steps:
+    - uses: actions/checkout@v5
+    - name: install
+      run: sudo apt-get update ; sudo apt-get install gfortran gnuplot libgsl-dev libnetcdf-dev libhdf5-dev libzstd-dev liblz4-dev libzfp-dev libeccodes-dev
+    - name: install NVHPC
+      run: |
+        curl -fsSL https://developer.download.nvidia.com/hpc-sdk/ubuntu/DEB-GPG-KEY-NVIDIA-HPC-SDK | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-hpcsdk-archive-keyring.gpg
+        echo 'deb [signed-by=/usr/share/keyrings/nvidia-hpcsdk-archive-keyring.gpg] https://developer.download.nvidia.com/hpc-sdk/ubuntu/amd64 /' | sudo tee /etc/apt/sources.list.d/nvhpc.list
+        sudo apt-get update ; sudo apt-get install -y nvhpc-25-9
+        NVHPC_ROOT=$(ls -d /opt/nvidia/hpc_sdk/Linux_x86_64/*/ | head -n 1)
+        echo "${NVHPC_ROOT}compilers/bin" >> $GITHUB_PATH
+        echo "CUDA_PATH=${NVHPC_ROOT}cuda" >> $GITHUB_ENV
+    - name: make
+      run: cd src ; make $NVC_FLAGS
+    - name: make check (without trac_test)
+      run: cd src ; make $NVC_FLAGS atm_test cli_test compress_test coord_test dt_test interoper_test met_test tools_test tropo_test
+    - name: make trac_test (not blocking)
+      continue-on-error: true
+      run: cd src ; make $NVC_FLAGS trac_test
+    - name: make wrapper_test
+      run: cd src ; make $NVC_FLAGS wrapper_test
+    - name: compile for GPUs (not run)
+      run: cd src ; make clean ; make $NVC_FLAGS GPU=1 ; make $NVC_FLAGS GPU=1 wrapper
