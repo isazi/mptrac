@@ -127,6 +127,12 @@ else ifeq ($(COMPILER),nvc)
   FC=nvfortran
   FCFLAGS=-Wall -fopenmp -g -traceback -mcmodel=medium -Mlarge_arrays -Mpreprocess $(DEFINES) $(OPT) -Mdclchk -Mstandard -Mbounds -Mchkptr  -Mchkstk -Minfo
   FPPFLAGS=-Mpreprocess -E $(DEFINES)
+  ifeq ($(GPU),1)
+    FCFLAGS += -acc -gpu=cc80,cc90
+    ifeq ($(GPU_PIN),1)
+      FCFLAGS += -gpu=mem:separate:pinnedalloc
+    endif
+  endif
 else ifeq ($(COMPILER),clang)
   $(warning Compiler $(COMPILER) does not support Fortran wrapper)
 endif
