@@ -3934,8 +3934,7 @@ void module_chem_grid(
   /* Set vertical coordinates... */
 #ifdef _OPENACC
 #pragma acc enter data create(ixs[0:np],iys[0:np],izs[0:np],z[0:nz],press[0:nz],mass[0:ngrid*nens],area[0:ny],lon[0:nx],lat[0:ny])
-#pragma acc data present(ctl,met0,met1,atm,ixs,iys,izs,z,press,mass,area,lon,lat)
-#pragma acc parallel loop independent gang vector
+#pragma acc parallel loop independent gang vector present(ctl,met0,met1,atm,ixs,iys,izs,z,press,mass,area,lon,lat)
 #else
 #pragma omp parallel for default(shared)
 #endif
@@ -3946,7 +3945,7 @@ void module_chem_grid(
 
   /* Initialize mass grid... */
 #ifdef _OPENACC
-#pragma acc parallel loop independent gang vector
+#pragma acc parallel loop independent gang vector present(mass)
 #endif
   for (int i = 0; i < ngrid * nens; i++)
     mass[i] = 0;
@@ -3957,7 +3956,7 @@ void module_chem_grid(
 
   /* Get indices... */
 #ifdef _OPENACC
-#pragma acc parallel loop independent gang vector
+#pragma acc parallel loop independent gang vector present(ctl,atm,ixs,iys,izs)
 #else
 #pragma omp parallel for default(shared)
 #endif
@@ -3981,7 +3980,7 @@ void module_chem_grid(
 
   /* Set horizontal coordinates... */
 #ifdef _OPENACC
-#pragma acc parallel loop independent gang vector
+#pragma acc parallel loop independent gang vector present(ctl,lon)
 #else
 #pragma omp parallel for default(shared)
 #endif
@@ -3989,7 +3988,7 @@ void module_chem_grid(
     lon[ix] = ctl->chemgrid_lon0 + dlon * (ix + 0.5);
 
 #ifdef _OPENACC
-#pragma acc parallel loop independent gang vector
+#pragma acc parallel loop independent gang vector present(ctl,lat,area)
 #else
 #pragma omp parallel for default(shared)
 #endif
@@ -4000,7 +3999,7 @@ void module_chem_grid(
 
   /* Get mass per grid box... */
 #ifdef _OPENACC
-#pragma acc parallel loop independent gang vector
+#pragma acc parallel loop independent gang vector present(ctl,atm,ixs,iys,izs,mass)
 #endif
   for (int ip = 0; ip < np; ip++) {
     if (izs[ip] >= 0) {
@@ -4018,7 +4017,7 @@ void module_chem_grid(
 
   /* Assign grid data to air parcels ... */
 #ifdef _OPENACC
-#pragma acc parallel loop independent gang vector
+#pragma acc parallel loop independent gang vector present(ctl,atm,met0,met1,ixs,iys,izs,press,lon,lat,area,mass)
 #else
 #pragma omp parallel for default(shared)
 #endif
@@ -4827,7 +4826,7 @@ void module_h2o2_chem(
   const double low = pow(1. / SO2_CORR_A, 1. / SO2_CORR_B);
 
   /* Loop over particles... */
-  PARTICLE_LOOP(0, atm->np, 1, "acc data present(ctl,cache,met0,met1,atm)") {
+  PARTICLE_LOOP(0, atm->np, 1, "acc data present(ctl,cache,clim,met0,met1,atm)") {
 
     /* Check whether particle is inside cloud... */
     double lwc, rwc;
@@ -5309,8 +5308,7 @@ void module_mixing_help(
   /* Init... */
 #ifdef _OPENACC
 #pragma acc enter data create(cmean[0:total_grid],cweight[0:total_grid])
-#pragma acc data present(ctl,atm,ixs,iys,izs,mixparam,cmean,cweight)
-#pragma acc parallel loop independent gang vector
+#pragma acc parallel loop independent gang vector present(ctl,atm,ixs,iys,izs,mixparam,cmean,cweight)
 #else
 #ifdef __NVCOMPILER
 #pragma novector
@@ -5324,7 +5322,7 @@ void module_mixing_help(
 
   /* Loop over particles... */
 #ifdef _OPENACC
-#pragma acc parallel loop independent gang vector
+#pragma acc parallel loop independent gang vector present(ctl,atm,ixs,iys,izs,mixparam,cmean,cweight)
 #endif
   for (int ip = 0; ip < np; ip++)
     if (izs[ip] >= 0) {
@@ -5346,7 +5344,7 @@ void module_mixing_help(
 
   /* Compute means... */
 #ifdef _OPENACC
-#pragma acc parallel loop independent gang vector
+#pragma acc parallel loop independent gang vector present(cmean,cweight)
 #else
 #ifdef __NVCOMPILER
 #pragma novector
@@ -5359,7 +5357,7 @@ void module_mixing_help(
 
   /* Interparcel mixing... */
 #ifdef _OPENACC
-#pragma acc parallel loop independent gang vector
+#pragma acc parallel loop independent gang vector present(ctl,atm,ixs,iys,izs,mixparam,cmean)
 #else
 #pragma omp parallel for
 #endif
@@ -5829,8 +5827,7 @@ void module_rng(
 
     /* Uniform distribution... */
 #ifdef _OPENACC
-#pragma acc data present(rs)
-#pragma acc parallel loop independent gang vector
+#pragma acc parallel loop independent gang vector present(rs)
 #else
 #pragma omp parallel for default(shared)
 #endif
@@ -5854,7 +5851,7 @@ void module_rng(
     /* Normal distribution... */
     if (method == 1) {
 #ifdef _OPENACC
-#pragma acc parallel loop independent gang vector
+#pragma acc parallel loop independent gang vector present(rs)
 #else
 #pragma omp parallel for default(shared)
 #endif
@@ -5941,12 +5938,11 @@ void module_sort(
 
 #ifdef _OPENACC
 #pragma acc enter data create(a[0:np],p[0:np])
-#pragma acc data present(ctl,met0,atm,a,p)
 #endif
 
   /* Get box index... */
 #ifdef _OPENACC
-#pragma acc parallel loop independent gang vector
+#pragma acc parallel loop independent gang vector present(ctl,met0,atm,a,p)
 #else
 #pragma omp parallel for default(shared)
 #endif
@@ -6012,15 +6008,14 @@ void module_sort_help(
   /* Reordering of array... */
 #ifdef _OPENACC
 #pragma acc enter data create(help[0:np])
-#pragma acc data present(a,p,help)
-#pragma acc parallel loop independent gang vector
+#pragma acc parallel loop independent gang vector present(a,p,help)
 #else
 #pragma omp parallel for default(shared)
 #endif
   for (int ip = 0; ip < np; ip++)
     help[ip] = a[p[ip]];
 #ifdef _OPENACC
-#pragma acc parallel loop independent gang vector
+#pragma acc parallel loop independent gang vector present(a,help)
 #else
 #pragma omp parallel for default(shared)
 #endif
@@ -7990,7 +7985,7 @@ void mptrac_run_timestep(
 
   /* Initialize quantity of total loss rate... */
   if (ctl->qnt_loss_rate >= 0) {
-    PARTICLE_LOOP(0, atm->np, 1, "acc data present(ctl,atm)") {
+    PARTICLE_LOOP(0, atm->np, 1, "acc data present(ctl,cache,atm)") {
       atm->q[ctl->qnt_loss_rate][ip] = 0;
     }
   }
