@@ -140,6 +140,14 @@ To verify the installation, run the test suite:
 If you compiled with the NVIDIA HPC SDK, build with `NOFMA=1` (see
 above) before running the tests, e.g., `make clean; make NOFMA=1`.
 
+`make` does not rebuild `mptrac.o` when only the build options change
+(e.g., `GPU`, `NOFMA`, `ZSTD`, `COMPILER`). The Makefile therefore
+records the options used for the last build in `src/.build_config`. If
+you run `make` with different options while an old `mptrac.o` exists,
+it prints a warning that the configuration differs. In that case, run
+`make clean` and rebuild. Pass the same options to every `make`
+invocation, including `make wrapper` and the test targets.
+
 These tests cover a wide range of MPTRAC functionalities. Make sure
 all tests pass successfully before using the model in other
 applications. If any test fails, check the log messages for further
