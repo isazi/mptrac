@@ -56,16 +56,16 @@ for f in $(ls data.ref/*.tab) ; do
     if awk -v tol=1e-4 '
         NR == FNR { if (!/^#/ && NF > 0) ref[++n] = $0; next }
         /^#/ || NF == 0 { next }
-        { if (++m > n) exit 1
+        { if (++m > n) { bad = 1; exit }
           nf = split(ref[m], r)
-          if (nf != NF) exit 1
+          if (nf != NF) { bad = 1; exit }
           for (i = 1; i <= NF; i++) {
               d = $i - r[i]; if (d < 0) d = -d
               a = $i < 0 ? -$i : $i; b = r[i] < 0 ? -r[i] : r[i]
               if (b > a) a = b
-              if (d > tol * a) exit 1
+              if (d > tol * a) { bad = 1; exit }
           } }
-        END { exit (m != n) }' "$f" data/"$(basename "$f")" ; then
+        END { exit (bad || m != n) }' "$f" data/"$(basename "$f")" ; then
 	echo "Files data/$(basename "$f") and $f are equal within tolerance"
     else
 	echo "Files data/$(basename "$f") and $f differ"

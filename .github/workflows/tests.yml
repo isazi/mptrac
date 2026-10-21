@@ -49,3 +49,10 @@ jobs:
       run: cd src ; make $NVC_FLAGS trac_test
     - name: compile for GPUs (not run)
       run: cd src ; make clean ; make $NVC_FLAGS GPU=1 ; make $NVC_FLAGS GPU=1 wrapper
+    - name: upload test data
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: nvc-test-data
+        path: tests/*/data
+        retention-days: 7

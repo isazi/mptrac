@@ -117,8 +117,42 @@ $trac/trac data/dirlist trac.ctl atm_init.tab \
 
 # Compare files...
 echo -e "\nCompare results..."
+
+# Rounding differences between compilers and platforms are amplified by the
+# diffusion over the three days of the simulation, so numbers are compared
+# with a relative tolerance instead of bit-for-bit. Values that follow
+# individual air parcels need the loosest tolerance, gridded data need an
+# intermediate one, and aggregated results are compared tightly.
+compare() {
+    local f=$1 tol=$2
+    if awk -v tol="$tol" '
+        NR == FNR { if (!/^#/ && NF > 0) ref[++n] = $0; next }
+        /^#/ || NF == 0 { next }
+        { if (++m > n) { bad = 1; exit }
+          nf = split(ref[m], r)
+          if (nf != NF) { bad = 1; exit }
+          for (i = 1; i <= NF; i++) {
+              if ($i == r[i]) continue
+              if ($i !~ /^[-+0-9.]/ || r[i] !~ /^[-+0-9.]/) { bad = 1; exit }
+              d = $i - r[i]; if (d < 0) d = -d
+              a = $i < 0 ? -$i : $i; b = r[i] < 0 ? -r[i] : r[i]
+              if (b > a) a = b
+              if (d > tol * a) { bad = 1; exit }
+          } }
+        END { exit (bad || m != n) }' "$f" data/"$(basename "$f")" ; then
+	echo "Files data/$(basename "$f") and $f are equal within tolerance"
+    else
+	echo "Files data/$(basename "$f") and $f differ"
+	error=1
+    fi
+}
+
 error=0
 for f in $(ls data.ref/*.tab data.ref/*.vtk) ; do
-    diff -q -s data/"$(basename "$f")" "$f" || error=1
+    case "$(basename "$f")" in
+	atm_*|station_*) compare "$f" 5e-2 ;;
+	grid_*) compare "$f" 1e-2 ;;
+	*) compare "$f" 1e-3 ;;
+    esac
 done
 exit $error

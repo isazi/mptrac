@@ -8386,6 +8386,14 @@ void mptrac_write_output(
   if (ctl->stat_basename[0] != '-') {
     sprintf(filename, "%s/%s.tab", dirname, ctl->stat_basename);
     write_station(filename, ctl, atm, t);
+
+    /* Update GPU (station flag is set on the host)... */
+#ifdef _OPENACC
+    if (ctl->qnt_stat >= 0) {
+      SELECT_TIMER("UPDATE_DEVICE", "MEMORY");
+#pragma acc update device(atm->q[ctl->qnt_stat][:atm->np])
+    }
+#endif
   }
 
   /* Write VTK data... */
