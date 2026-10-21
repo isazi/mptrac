@@ -3,6 +3,7 @@ bin/
 docs/docs/
 docs/site/
 libs/build/
+logs/
 projects/*
 !projects/containers/
 !projects/benchmarking/
