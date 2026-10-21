@@ -64,6 +64,26 @@ $trac/met_sample - data/sample_ei_2011_06_05_00.tab data/atm_init.tab \
 echo -e "\nCompare results..."
 error=0
 for f in $(ls data.ref/*.tab) ; do
-    diff -q -s data/"$(basename "$f")" "$f" || error=1
+    # Rounding differences between compilers and platforms can flip the last
+    # printed digit of a few values, so numbers are compared with a relative
+    # tolerance instead of bit-for-bit.
+    if awk -v tol=1e-4 '
+        NR == FNR { if (!/^#/ && NF > 0) ref[++n] = $0; next }
+        /^#/ || NF == 0 { next }
+        { if (++m > n) exit 1
+          nf = split(ref[m], r)
+          if (nf != NF) exit 1
+          for (i = 1; i <= NF; i++) {
+              d = $i - r[i]; if (d < 0) d = -d
+              a = $i < 0 ? -$i : $i; b = r[i] < 0 ? -r[i] : r[i]
+              if (b > a) a = b
+              if (d > tol * a) exit 1
+          } }
+        END { exit (m != n) }' "$f" data/"$(basename "$f")" ; then
+	echo "Files data/$(basename "$f") and $f are equal within tolerance"
+    else
+	echo "Files data/$(basename "$f") and $f differ"
+	error=1
+    fi
 done
 exit $error
