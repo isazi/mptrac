@@ -39,6 +39,7 @@ projects/web_runner/runs/
 projects/web_runner/venv/
 src/*.o
 src/*.mod
+src/.build_config
 src/atm2grid
 src/atm_conv
 src/atm_dist

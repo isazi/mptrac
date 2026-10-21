@@ -291,6 +291,28 @@ ifeq ($(DD),1)
 endif
 
 # -----------------------------------------------------------------------------
+# Check build configuration...
+# -----------------------------------------------------------------------------
+
+# Make does not track changes of variables, so warn if the object file was
+# built with a different configuration than the current one...
+BUILD_CONFIG := COMPILER=$(COMPILER) MPI=$(MPI) DD=$(DD) GPU=$(GPU) \
+  NOFMA=$(NOFMA) CURAND=$(CURAND) THRUST=$(THRUST) ZFP=$(ZFP) ZSTD=$(ZSTD) \
+  LZ4=$(LZ4) SZ3=$(SZ3) ECCODES=$(ECCODES) KPP=$(KPP) CMS=$(CMS) \
+  STATIC=$(STATIC) COV=$(COV) OPT=$(OPT) DEFINES=$(DEFINES)
+ifneq ($(wildcard mptrac.o),)
+  OLD_CONFIG := $(shell cat .build_config 2>/dev/null)
+  ifneq ($(OLD_CONFIG),)
+    ifneq ($(OLD_CONFIG),$(BUILD_CONFIG))
+      $(warning mptrac.o was built with a different configuration)
+      $(warning   built with: $(OLD_CONFIG))
+      $(warning   now using:  $(BUILD_CONFIG))
+      $(warning Run "make clean" first to rebuild everything with the current configuration)
+    endif
+  endif
+endif
+
+# -----------------------------------------------------------------------------
 # Targets...
 # -----------------------------------------------------------------------------
 
@@ -304,6 +326,7 @@ $(EXC): %: %.c mptrac.o
 
 mptrac.o: mptrac.c mptrac.h Makefile
 	$(CC) $(CFLAGS) -c -o mptrac.o mptrac.c
+	@echo '$(BUILD_CONFIG)' > .build_config
 
 mptrac_fortran.o: mptrac_fortran.f90 mptrac.h Makefile
 	$(FC) $(FCFLAGS) -o mptrac_fortran.o -c mptrac_fortran.f90 $(LDFLAGS)
@@ -327,7 +350,7 @@ $(TESTS) cms_test dd_test gpu_test grib_test kpp_test wrapper_test: all
 check: $(TESTS)
 
 clean:
-	rm -rf $(EXC) trac_fortran lib* *.o *.mod *.gcda *.gcno *.gcov coverage* *~
+	rm -rf $(EXC) trac_fortran .build_config lib* *.o *.mod *.gcda *.gcno *.gcov coverage* *~
 
 coverage:
 	$(MAKE) clean
@@ -357,6 +380,7 @@ install: all
 lib: mptrac.c mptrac.h Makefile
 ifeq ($(STATIC),1)
 	$(CC) $(CFLAGS) -c -o mptrac.o mptrac.c
+	@echo '$(BUILD_CONFIG)' > .build_config
 	ar rcs libmptrac.a mptrac.o
 else
 	$(CC) $(CFLAGS) -shared -fPIC -o libmptrac.so mptrac.c
