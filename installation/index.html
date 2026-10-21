@@ -1199,6 +1199,13 @@ emacs Makefile
 </code></pre>
 <p>If you compiled with the NVIDIA HPC SDK, build with <code>NOFMA=1</code> (see
 above) before running the tests, e.g., <code>make clean; make NOFMA=1</code>.</p>
+<p><code>make</code> does not rebuild <code>mptrac.o</code> when only the build options change
+(e.g., <code>GPU</code>, <code>NOFMA</code>, <code>ZSTD</code>, <code>COMPILER</code>). The Makefile therefore
+records the options used for the last build in <code>src/.build_config</code>. If
+you run <code>make</code> with different options while an old <code>mptrac.o</code> exists,
+it prints a warning that the configuration differs. In that case, run
+<code>make clean</code> and rebuild. Pass the same options to every <code>make</code>
+invocation, including <code>make wrapper</code> and the test targets.</p>
 <p>These tests cover a wide range of MPTRAC functionalities. Make sure
 all tests pass successfully before using the model in other
 applications. If any test fails, check the log messages for further
