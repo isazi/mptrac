@@ -115,6 +115,14 @@ Pay special attention to the following settings:
   the `GPU` flag, and ensure the NVIDIA HPC SDK is installed to
   compile the GPU code. OpenMP parallelization is always enabled.
 
+* When compiling with the NVIDIA HPC SDK (`COMPILER=nvc`), the
+  compiler fuses multiply-add operations by default. This changes the
+  rounding of floating-point results, so the checksums of the
+  `compress_test` no longer match the reference data. To reproduce
+  the reference results, set the `NOFMA` flag (`-Mnofma`) when
+  building the binaries used for testing. Do not set it for
+  production runs, as disabling FMA may reduce performance.
+
 * Some options in the Makefile are labeled as experimental. These
   features are still under development and may not be fully functional
   or tested. Use them at your own risk.
@@ -128,6 +136,9 @@ Once the Makefile is configured, compile the code using:
 To verify the installation, run the test suite:
 
     make check
+
+If you compiled with the NVIDIA HPC SDK, build with `NOFMA=1` (see
+above) before running the tests, e.g., `make clean; make NOFMA=1`.
 
 These tests cover a wide range of MPTRAC functionalities. Make sure
 all tests pass successfully before using the model in other

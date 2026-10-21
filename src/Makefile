@@ -44,6 +44,9 @@ STATIC ?= 0
 # Optimization flags...
 OPT ?= -O3
 
+# Disable fused multiply-add for nvc, to reproduce the reference test data...
+NOFMA ?= 0
+
 # Optimization information...
 INFO ?= 0
 
@@ -101,6 +104,9 @@ else ifeq ($(COMPILER),icx)
 else ifeq ($(COMPILER),nvc)
   CC=nvc
   CFLAGS += -mp
+  ifeq ($(NOFMA),1)
+    CFLAGS += -Mnofma
+  endif
 else ifeq ($(COMPILER),clang)
   CC=clang
   CFLAGS += -DHAVE_INLINE -pedantic -Werror -Wall -W -Wmissing-prototypes -Wconversion -Wshadow -Wpointer-arith -Wcast-qual -Wcast-align -Wnested-externs -Wno-long-long -Wmissing-declarations -Wredundant-decls -Winline -fno-common -fshort-enums -fopenmp
