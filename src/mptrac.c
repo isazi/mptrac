@@ -2400,12 +2400,11 @@ void dd_sort(
 #ifdef _OPENACC
 #pragma acc enter data create(amax)
 #pragma acc update device(amax)
-#pragma acc data present(ctl,met0,atm,dd,amax)
 #endif
 
   /* Get box index... */
 #ifdef _OPENACC
-#pragma acc parallel loop independent gang vector
+#pragma acc parallel loop independent gang vector present(ctl,met0,atm,dd,amax)
 #else
 #pragma omp parallel for default(shared)
 #endif
@@ -2510,15 +2509,14 @@ void dd_sort_help(
 
   /* Reordering of array... */
 #ifdef _OPENACC
-#pragma acc data present(dd,a)
-#pragma acc parallel loop independent gang vector
+#pragma acc parallel loop independent gang vector present(dd,a)
 #else
 #pragma omp parallel for default(shared)
 #endif
   for (int ip = 0; ip < np; ip++)
     dd->tmp[ip] = a[dd->perm[ip]];
 #ifdef _OPENACC
-#pragma acc parallel loop independent gang vector
+#pragma acc parallel loop independent gang vector present(dd,a)
 #else
 #pragma omp parallel for default(shared)
 #endif
