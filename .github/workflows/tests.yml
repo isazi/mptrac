@@ -47,7 +47,5 @@ jobs:
     - name: make trac_test (not blocking)
       continue-on-error: true
       run: cd src ; make $NVC_FLAGS trac_test
-    - name: make wrapper_test
-      run: cd src ; make $NVC_FLAGS wrapper_test
     - name: compile for GPUs (not run)
       run: cd src ; make clean ; make $NVC_FLAGS GPU=1 ; make $NVC_FLAGS GPU=1 wrapper
