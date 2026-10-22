@@ -74,7 +74,10 @@ for f in $(ls data.ref/*.tab) ; do
           nf = split(ref[m], r)
           if (nf != NF) { bad = 1; exit }
           for (i = 1; i <= NF; i++) {
-              # Identical text (including nan) is equal.
+              # nan is equal to nan, regardless of its sign (platform
+              # dependent), but not to a number.
+              rn = (r[i] ~ /nan/); an = ($i ~ /nan/)
+              if (rn || an) { if (rn && an) continue; bad = 1; exit }
               if ($i "" == r[i] "") continue
               d = $i - r[i]; if (d < 0) d = -d
               a = $i < 0 ? -$i : $i; b = r[i] < 0 ? -r[i] : r[i]
