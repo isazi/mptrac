@@ -141,6 +141,30 @@ done
 echo
 error=0
 for f in data.ref/atm_2011*tab data.ref/grid_2011*tab ; do
-    diff -q -s "data/$(basename "$f")" "$f" || error=1
+    # Rounding differences between compilers and platforms can flip the last
+    # printed digit of a few values, so numbers are compared with a relative
+    # tolerance instead of bit-for-bit. The sign of nan is platform dependent.
+    if awk -v tol=1e-4 -v atol=1e-9 '
+        NR == FNR { if (!/^#/ && NF > 0) ref[++n] = $0; next }
+        /^#/ || NF == 0 { next }
+        { if (++m > n) { bad = 1; exit }
+          nf = split(ref[m], r)
+          if (nf != NF) { bad = 1; exit }
+          for (i = 1; i <= NF; i++) {
+              rn = (r[i] ~ /nan/); an = ($i ~ /nan/)
+              if (rn || an) { if (rn && an) continue; bad = 1; exit }
+              if ($i "" == r[i] "") continue
+              d = $i - r[i]; if (d < 0) d = -d
+              a = $i < 0 ? -$i : $i; b = r[i] < 0 ? -r[i] : r[i]
+              if (b > a) a = b
+              if (d <= atol) continue
+              if (d > tol * a) { bad = 1; exit }
+          } }
+        END { exit (bad || m != n) }' "$f" "data/$(basename "$f")" ; then
+	echo "Files data/$(basename "$f") and $f are equal within tolerance"
+    else
+	echo "Files data/$(basename "$f") and $f differ"
+	error=1
+    fi
 done
 exit $error
