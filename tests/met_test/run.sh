@@ -67,16 +67,27 @@ for f in $(ls data.ref/*.tab) ; do
     # Rounding differences between compilers and platforms can flip the last
     # printed digit of a few values, so numbers are compared with a relative
     # tolerance instead of bit-for-bit.
-    if awk -v tol=1e-4 '
+    if awk -v tol=1e-4 -v atol=1e-9 -v spec="$([[ $(basename "$f") == spec_* ]] && echo 1 || echo 0)" '
         NR == FNR { if (!/^#/ && NF > 0) ref[++n] = $0; next }
         /^#/ || NF == 0 { next }
         { if (++m > n) { bad = 1; exit }
           nf = split(ref[m], r)
           if (nf != NF) { bad = 1; exit }
           for (i = 1; i <= NF; i++) {
+              # Identical text (including nan) is equal.
+              if ($i "" == r[i] "") continue
               d = $i - r[i]; if (d < 0) d = -d
               a = $i < 0 ? -$i : $i; b = r[i] < 0 ? -r[i] : r[i]
               if (b > a) a = b
+              # Absolute floor for values that are numerically zero.
+              if (d <= atol) continue
+              # The phase of a spectral component with ~zero amplitude is
+              # arbitrary (e.g., 0 vs. 180 deg).
+              if (spec && i > 7 && (i - 1) % 3 == 0) {
+                  p = $(i-1) < 0 ? -$(i-1) : $(i-1)
+                  q = r[i-1] < 0 ? -r[i-1] : r[i-1]
+                  if (p < atol && q < atol) continue
+              }
               if (d > tol * a) { bad = 1; exit }
           } }
         END { exit (bad || m != n) }' "$f" data/"$(basename "$f")" ; then
